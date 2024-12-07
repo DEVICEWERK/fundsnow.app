@@ -1066,3 +1066,727 @@ const SendTokensModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ i
   );
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"use client"
+
+import * as React from "react"
+import * as ProgressPrimitive from "@radix-ui/react-progress"
+
+import { cn } from "@/lib/utils"
+
+const Progress = React.forwardRef<
+  React.ElementRef<typeof ProgressPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
+    indicatorClassName?: string
+  }
+>(({ className, value, indicatorClassName, ...props }, ref) => (
+  <ProgressPrimitive.Root
+    ref={ref}
+    className={cn(
+      "relative h-4 w-full overflow-hidden rounded-full",
+      className
+    )}
+    {...props}
+  >
+    <ProgressPrimitive.Indicator
+      className={cn(
+        "h-full w-full flex-1 transition-all",
+        indicatorClassName
+      )}
+      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+    />
+  </ProgressPrimitive.Root>
+))
+Progress.displayName = ProgressPrimitive.Root.displayName
+
+export { Progress }
+
+import { useState } from 'react'
+import { X, Copy, Check } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+
+interface Friend {
+  id: number
+  name: string
+  avatar: string
+}
+
+interface FriendsListModalProps {
+  isOpen: boolean
+  onClose: () => void
+  friends: Friend[]
+  referralInput: string
+  setReferralInput: (value: string) => void
+  addFriendWithReferral: () => void
+}
+
+export function FriendsListModal({ isOpen, onClose, friends, referralInput, setReferralInput, addFriendWithReferral }: FriendsListModalProps) {
+  const generateReferralCode = () => {
+    return Math.random().toString(36).substring(2, 10).toUpperCase()
+  }
+
+  const [referralCode] = useState(generateReferralCode)
+  const [copied, setCopied] = useState(false)
+
+  const copyReferralCode = () => {
+    navigator.clipboard.writeText(referralCode)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Active Mining Friends</DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="h-[300px] w-full rounded-md border p-4">
+          {friends.map((friend) => (
+            <div key={friend.id} className="flex items-center space-x-4 mb-4">
+              <Avatar>
+                <AvatarImage src={friend.avatar} alt={friend.name} />
+                <AvatarFallback>{friend.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-medium leading-none">{friend.name}</p>
+                <p className="text-sm text-muted-foreground">Mining</p>
+              </div>
+            </div>
+          ))}
+        </ScrollArea>
+        <div className="mt-4 mb-4">
+          <h3 className="text-sm font-semibold mb-2">Your Referral Code</h3>
+          <div className="flex space-x-2">
+            <Input 
+              value={referralCode} 
+              readOnly 
+              className="bg-muted"
+            />
+            <Button 
+              size="icon"
+              variant="outline"
+              onClick={copyReferralCode}
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Share this code with friends to earn bonus mining rates!
+          </p>
+        </div>
+        <div className="mt-4">
+          <h3 className="text-sm font-semibold mb-2">Enter Friend's Referral Code</h3>
+          <div className="flex space-x-2">
+            <Input 
+              value={referralInput} 
+              onChange={(e) => setReferralInput(e.target.value)}
+              placeholder="Enter referral code"
+            />
+            <Button onClick={addFriendWithReferral}>
+              Add Friend
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+"use client"
+
+import { useState } from "react"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Button } from "@/components/ui/button"
+import { Menu, Users, Lock, Crown } from 'lucide-react'
+import Image from "next/image"
+import { cn } from "@/lib/utils"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useDashboard } from "../app/context/DashboardContext"
+
+interface Streamer {
+  id: string
+  name: string
+  viewers: number
+  thumbnailUrl: string
+  unlocked: boolean
+  isCurrentUser?: boolean
+}
+
+interface LiveStreamersMenuProps {
+  className?: string;
+  currentUserStream?: {
+    active: boolean;
+    thumbnailUrl: string;
+    viewers: number;
+  };
+}
+
+const DUMMY_STREAMERS: Streamer[] = [
+  { id: "1", name: "CryptoKing", viewers: 1200, thumbnailUrl: "/placeholder.svg?height=100&width=180", unlocked: false },
+  { id: "2", name: "BlockchainQueen", viewers: 980, thumbnailUrl: "/placeholder.svg?height=100&width=180", unlocked: true },
+  { id: "3", name: "SatoshiDisciple", viewers: 1500, thumbnailUrl: "/placeholder.svg?height=100&width=180", unlocked: false },
+  { id: "4", name: "Web3Wizard", viewers: 750, thumbnailUrl: "/placeholder.svg?height=100&width=180", unlocked: false },
+  { id: "5", name: "CryptoNewbie", viewers: 300, thumbnailUrl: "/placeholder.svg?height=100&width=180", unlocked: true },
+  { id: "6", name: "BlockExplorer", viewers: 1100, thumbnailUrl: "/placeholder.svg?height=100&width=180", unlocked: false },
+  { id: "7", name: "HashRateHero", viewers: 890, thumbnailUrl: "/placeholder.svg?height=100&width=180", unlocked: true },
+  { id: "8", name: "TokenTalker", viewers: 670, thumbnailUrl: "/placeholder.svg?height=100&width=180", unlocked: false },
+]
+
+export function LiveStreamersMenu({ className, currentUserStream }: LiveStreamersMenuProps) {
+  const { snowCoins, setSnowCoins } = useDashboard();
+  const [streamers, setStreamers] = useState<Streamer[]>(DUMMY_STREAMERS)
+
+  const unlockStream = (streamerId: string) => {
+    if (snowCoins >= 50_000_000) {
+      setSnowCoins(prev => prev - 50_000_000);
+      setStreamers(streamers.map(streamer => 
+        streamer.id === streamerId ? { ...streamer, unlocked: true } : streamer
+      ));
+    } else {
+      console.log("Insufficient Snow Tokens to unlock stream");
+    }
+  }
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className={cn("text-blue-400", className)}>
+          <Menu className="h-6 w-6" />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-full sm:w-[400px] bg-slate-900 text-white p-0">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold mb-4">Live Streamers</h2>
+        </div>
+        <ScrollArea className="h-[calc(100vh-100px)] px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
+            {/* Current User's Stream */}
+            {currentUserStream?.active && (
+              <div className="col-span-full mb-4">
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-px rounded-lg">
+                  <div className="relative rounded-lg overflow-hidden bg-slate-900">
+                    <Image
+                      src={currentUserStream.thumbnailUrl}
+                      alt="Your stream"
+                      width={180}
+                      height={100}
+                      className="w-full aspect-video object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-full flex items-center gap-2">
+                        <Crown className="w-4 h-4" />
+                        Your Active Stream
+                      </div>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                      <p className="font-semibold">Your Stream</p>
+                      <div className="flex items-center text-sm">
+                        <Users className="w-4 h-4 mr-1" />
+                        <span>{currentUserStream.viewers}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Other Streamers */}
+            {streamers.map((streamer) => (
+              <div key={streamer.id} className="relative rounded-lg overflow-hidden">
+                <Image
+                  src={streamer.thumbnailUrl}
+                  alt={`${streamer.name}'s stream`}
+                  width={180}
+                  height={100}
+                  className={`w-full ${streamer.unlocked ? '' : 'blur-sm'}`}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {!streamer.unlocked && (
+                    <Button 
+                      onClick={() => unlockStream(streamer.id)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      <>
+                        <Lock className="w-4 h-4 mr-2" />
+                        Pay 50M Snow Tokens
+                      </>
+                    </Button>
+                  )}
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                  <p className="font-semibold">{streamer.name}</p>
+                  <div className="flex items-center text-sm">
+                    <Users className="w-4 h-4 mr-1" />
+                    <span>{streamer.viewers}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+"use client"
+
+import { Bell } from 'lucide-react'
+import { motion } from 'framer-motion'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Button } from "@/components/ui/button"
+import { useNotifications } from '@/app/context/NotificationContext'
+import { formatDistanceToNow } from 'date-fns'
+
+export function NotificationBell() {
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useNotifications()
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'purchase':
+        return '🛍️'
+      case 'live':
+        return '🔴'
+      case 'earnings':
+        return '💰'
+      case 'rewards':
+        return '🎁'
+      case 'transaction':
+        return '💳'
+      default:
+        return '📢'
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="relative h-10 w-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+          aria-label="Notifications"
+        >
+          <Bell className="w-5 h-5 text-blue-400" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
+              {unreadCount}
+            </span>
+          )}
+        </motion.button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80">
+        <div className="flex items-center justify-between p-4">
+          <h3 className="font-semibold">Notifications</h3>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={markAllAsRead}
+              className="text-xs"
+            >
+              Mark all as read
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={clearNotifications}
+              className="text-xs"
+            >
+              Clear all
+            </Button>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <ScrollArea className="h-[300px]">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-center text-sm text-gray-500">
+              No notifications
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <DropdownMenuItem
+                key={notification.id}
+                className={`p-4 cursor-pointer ${!notification.read ? 'bg-blue-500/10' : ''}`}
+                onClick={() => markAsRead(notification.id)}
+              >
+                <div className="flex gap-3">
+                  <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-semibold text-sm">{notification.title}</h4>
+                      <span className="text-xs text-gray-500">
+                        {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">{notification.message}</p>
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            ))
+          )}
+        </ScrollArea>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+import React, { useState, useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { useDashboard } from "@/app/context/DashboardContext"
+import { useNotifications } from "@/app/context/NotificationContext"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+interface SendTokensModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+// Simulated user list for demonstration
+const DEMO_USERS = [
+  { id: '1', name: 'Alice' },
+  { id: '2', name: 'Bob' },
+  { id: '3', name: 'Charlie' },
+  { id: '4', name: 'Diana' },
+]
+
+export function SendTokensModal({ isOpen, onClose }: SendTokensModalProps) {
+  const [recipient, setRecipient] = useState('')
+  const [amount, setAmount] = useState('')
+  const [error, setError] = useState('')
+  const { snowCoins, setSnowCoins } = useDashboard()
+  const { addNotification } = useNotifications()
+
+  useEffect(() => {
+    if (isOpen) {
+      setRecipient('')
+      setAmount('')
+      setError('')
+    }
+  }, [isOpen])
+
+  const handleSend = () => {
+    const amountToSend = parseFloat(amount)
+    if (!recipient) {
+      setError('Please select a recipient')
+      return
+    }
+    if (isNaN(amountToSend) || amountToSend <= 0) {
+      setError('Please enter a valid amount')
+      return
+    }
+    if (amountToSend > snowCoins) {
+      setError('Insufficient balance')
+      return
+    }
+
+    setSnowCoins(prev => prev - amountToSend)
+    const recipientName = DEMO_USERS.find(user => user.id === recipient)?.name || recipient
+    addNotification('transaction', 'Tokens Sent', `You have sent ${amountToSend} Snow Tokens to ${recipientName}`)
+    onClose()
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Send Snow Tokens</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="recipient" className="text-right">
+              Recipient
+            </label>
+            <Select value={recipient} onValueChange={setRecipient}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a recipient" />
+              </SelectTrigger>
+              <SelectContent>
+                {DEMO_USERS.map(user => (
+                  <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <label htmlFor="amount" className="text-right">
+              Amount
+            </label>
+            <Input
+              id="amount"
+              type="number"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value)
+                setError('')
+              }}
+              className="col-span-3"
+            />
+          </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <div className="text-sm text-gray-500">
+            Available balance: {snowCoins.toFixed(8)} Snow Tokens
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={onClose} variant="outline">
+            Cancel
+          </Button>
+          <Button onClick={handleSend} disabled={!recipient || !amount}>
+            Send Tokens
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+import { useState } from 'react'
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Lock, KeyRound, Moon, Layers, Mail, Key, Coins, Clock, Diamond, DollarSign, HelpCircle, ChevronRight } from 'lucide-react'
+import Image from 'next/image'
+
+interface SettingsModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const [darkMode, setDarkMode] = useState(false)
+
+  const settingsOptions = [
+    { icon: Lock, label: 'Enter Access Code' },
+    { icon: KeyRound, label: 'Set Up Password Recovery' },
+    { icon: Moon, label: 'Dark Mode', isToggle: true },
+    { icon: Layers, label: 'Set Up 2FA' },
+    { icon: Mail, label: 'Edit Email' },
+    { icon: Key, label: 'Change Password/Pin' },
+    { icon: Coins, label: 'Currency' },
+    { icon: Clock, label: 'Export Transaction History' },
+    { icon: Diamond, label: 'Ember Premium' },
+    { icon: DollarSign, label: 'Sell Crypto' },
+    { icon: HelpCircle, label: 'Help Center' },
+  ]
+
+  const handleSignOut = () => {
+    console.log('Signing out...')
+    onClose()
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md p-0">
+        <div className="flex flex-col divide-y divide-gray-100">
+          {settingsOptions.map((option, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <option.icon className="w-6 h-6 text-gray-500" />
+                <span className="text-base font-medium">{option.label}</span>
+              </div>
+              {option.isToggle ? (
+                <Switch
+                  checked={darkMode}
+                  onCheckedChange={setDarkMode}
+                  className="ml-auto"
+                />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="p-6 flex flex-col items-center gap-8">
+          <Button
+            variant="outline"
+            className="w-full py-6 text-base font-medium border-green-500 text-green-500 hover:bg-green-50"
+            onClick={handleSignOut}
+          >
+            SIGN OUT
+          </Button>
+
+          <div className="text-center">
+            <p className="text-gray-500 mb-4">Join our community!</p>
+            <div className="flex items-center justify-center gap-4">
+              <a href="#" className="hover:opacity-80">
+                <Image
+                  src="/placeholder.svg?height=32&width=32"
+                  alt="Discord"
+                  width={32}
+                  height={32}
+                />
+              </a>
+              <a href="#" className="hover:opacity-80">
+                <Image
+                  src="/placeholder.svg?height=32&width=32"
+                  alt="X/Twitter"
+                  width={32}
+                  height={32}
+                />
+              </a>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-400">
+            Version 22.2.3, Build 35.3 (1063)
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+import { useEffect, useState } from 'react'
+import { motion, useAnimation } from 'framer-motion'
+import Image from 'next/image'
+
+interface SnowToken {
+  id: number
+  x: number
+  scale: number
+  duration: number
+}
+
+interface SnowTokensProps {
+  progress: number // 0 to 1, representing the progress of the 24-hour period
+  isMiningStarted: boolean
+}
+
+export const SnowTokens: React.FC<SnowTokensProps> = ({ progress, isMiningStarted }) => {
+  const [tokens, setTokens] = useState<SnowToken[]>([])
+  const controls = useAnimation()
+
+  useEffect(() => {
+    if (!isMiningStarted) {
+      setTokens([])
+      return
+    }
+
+    const createToken = () => {
+      const newToken: SnowToken = {
+        id: Date.now(),
+        x: Math.random() * 100,
+        scale: 0.5 + Math.random() * 0.5,
+        duration: 3 + Math.random() * 2
+      }
+      setTokens(prevTokens => [...prevTokens.slice(-20), newToken])
+    }
+
+    const interval = setInterval(createToken, 200)
+    return () => clearInterval(interval)
+  }, [isMiningStarted])
+
+  useEffect(() => {
+    const removeOldTokens = () => {
+      setTokens(prevTokens => prevTokens.filter(token => token.duration > 0))
+    }
+
+    const interval = setInterval(removeOldTokens, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    controls.start({ y: `${100 * progress}%` })
+  }, [progress, controls])
+
+  if (!isMiningStarted) {
+    return null
+  }
+
+  return (
+    <div className="absolute inset-0 overflow-hidden h-full">
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-b from-transparent to-blue-500/20"
+        animate={controls}
+        initial={{ y: '0%' }}
+        transition={{ type: 'tween', ease: 'linear' }}
+      />
+      {tokens.map(token => (
+        <motion.div
+          key={token.id}
+          initial={{ x: `${token.x}%`, y: '-10%' }}
+          animate={{ y: '100%' }}
+          transition={{ duration: token.duration, ease: 'linear' }}
+          style={{ 
+            position: 'absolute', 
+            width: '20px', 
+            height: '20px',
+            left: `${token.x}%`,
+          }}
+        >
+          <Image
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_3893-removebg-preview-apm1UNOncdodiFRfqnXcRqnlpBSoLh.png"
+            alt="Snow Token"
+            width={20}
+            height={20}
+            style={{ 
+              filter: 'brightness(0) invert(1)',
+              opacity: 0.7,
+              transform: `scale(${token.scale})`
+            }}
+          />
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+import { useNotifications } from '@/app/context/NotificationContext'
+
+const WithdrawSwapModal = ({ onClose, ...props }: any) => {
+  const { addNotification } = useNotifications()
+
+  // ... rest of the component code ...
+}
+
+export default WithdrawSwapModal;
+
